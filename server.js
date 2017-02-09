@@ -62,14 +62,16 @@ var server = http.createServer((req, res) => {
       else if(req.method == 'POST') {
         uploadPicture(req, res);
       }
-      case "/favicon.ico":
-        req.writeHead(400);
-        req.end();
+      break;
+    case "/favicon.ico":
+        res.statusCode = 400;
+        res.end();
         break;
-      case "/gallery.css":
-        serveCSS(req, res);
+    case "/gallery.css":
+        res.setHeader('Content-Type', 'text/css');
+        res.end(stylesheet);
         break;
-      default:
+    default:
         serveImage(req, res);
         break;
 	}
@@ -101,7 +103,7 @@ var server = http.createServer((req, res) => {
      if(stats.isFile()) {
        fs.readFile(filename, function(err, file) {
          if(err) { handleError(req, res, err); return;}
-         res.writeHead(200, {'content-type': 'text/' + filename.split('.').last });
+         res.writeHead(200, {'content-type': 'image/' + filename.split('.').last });
          res.end(file);
        });
      }
@@ -148,7 +150,7 @@ var server = http.createServer((req, res) => {
   fs.readdir('images', function(err, files) {
     if(err) {
       console.error("Error in serveGallery", err);
-      res.writeHead(500, {'content-type': 'text/html'});
+      res.writeHead(500, {'Content-Type': 'text/html'});
       res.end('Server Error');
       return;
     }
@@ -163,7 +165,7 @@ var server = http.createServer((req, res) => {
     }).join("\n");
 
     // Show a gallery page
-    res.writeHead(200, {'content-type': 'text/html'});
+    res.writeHead(200, {'Content-Type': 'text/html'});
     res.end(
       '<!doctype html>\n' +
       '<html>\n' +
