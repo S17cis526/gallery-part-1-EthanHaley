@@ -62,22 +62,84 @@ var server = http.createServer((req, res) => {
       else if(req.method == 'POST') {
         uploadPicture(req, res);
       }
-      case "/favicon.ico":
-        req.writeHead(400);
-        req.end();
-        break;
-      case "/gallery.css":
-        serveCSS(req, res);
-        break;
-      default:
-        serveImage(req, res);
-        break;
+      var ghtml = imageNames.map(function(fileName){
+        return '<img src="' + fileName + '" alt="a fishing ace at work">'
+      }).join(' ');
+			var html = '<!doctype html>';
+				html += '<head>';
+        html += ' <title>Gallery</title>';
+        html += '<link href="gallery.css" rel = "stylesheet" type="">';
+        html += '</head>';
+				html += '<body>';
+				html += '	<h1>Gallery</h1>';
+				html += ghtml;
+				html += '</body>';
+			res.setHeader('Content-Type', 'text/html');
+			res.end(html);
+      break;
+		case "/chess":
+		case "/chess/":
+		case "/chess.jpg":
+		case "/chess.jpeg":
+			serveImage('chess.jpg', req, res);
+			break;
+		case "/fern":
+		case "/fern/":
+		case "/fern.jpg":
+		case "/fern.jpeg":
+			serveImage('fern.jpg', req, res);
+			break;
+		case "/ace":
+		case "/ace/":
+		case "/ace.jpg":
+		case "/ace.jpeg":
+			serveImage('ace.jpg', req, res);
+			break;
+		case "/bubble":
+		case "/bubble/":
+		case "/bubble.jpg":
+		case "/bubble.jpeg":
+			serveImage('bubble.jpg', req, res);
+			break;
+		case "/mobile":
+		case "/mobile/":
+		case "/mobile.jpg":
+		case "/mobile.jpeg":
+			serveImage('mobile.jpg', req, res);
+			break;
+    case '/gallery.css':
+      res.setHeader('Content-Type', 'text/css');
+      res.end(stylesheet);
+      break;
+		default:
+			res.statusCode = 404;
+			res.statusMessage = "Requested Resource Not Found";
+			res.end();
 	}
  });
 
  server.listen(port, ()=> {
 	 console.log("Listening on Port " + port);
  });
+
+ function buildGallery(req, res, imageTags) {
+   var hmtl = images.map(function(file) {
+     return "<img src='/images/" + file + "'/>";
+   }).join("\n");
+     hmtl += '<!doctype html>';
+     html += '<head>';
+     html += '  <title>' + config.title + '</title>';
+     html += '  <link href="gallery.css" rel="stylesheet type="tex/css>';
+     html += '</head>';
+     html += '<body>';
+     html += '  <h1>' + config.title + '</h1>';
+     html += '  <form action = "" method="POST">';
+     html += '    <input type="file" name="image">';
+     html += '    <input type="submit" name="Upload Image">';
+     html += '  </form>';
+     html += '	<h1>Hello.</h1> Time is ' + Date.now();
+     html += '</body>';
+ }
 
  function handleError(req, res, err) {
    console.err(err, req, res);
@@ -137,10 +199,10 @@ var server = http.createServer((req, res) => {
     '</form>';
  }
 
- function serveGallery(req, res, query, data) {
-  if(data && data.title) {
-    title = data.title;
-    config.title = data.title;
+ function serveGallery(req, res) {
+  if(req.query.title) {
+    title = query.title;
+    config.title = query.title;
     saveConfig();
   }
 
@@ -168,20 +230,15 @@ var server = http.createServer((req, res) => {
       '<!doctype html>\n' +
       '<html>\n' +
       ' <head>\n' +
-      '   <title>' + config.title + '</title>\n' +
+      '   <title>' + title + '</title>\n' +
       '    <link href="gallery.css" type="text/css" rel="stylesheet"/>' +
       ' </head>\n' +
       ' <body>\n' +
-      '   <h1>' + config.title + '</h1>\n' +
+      '   <h1>' + title + '</h1>\n' +
       generateTitleForm() +
       '   <div class="gallery">' +
       imageTags +
       '   </div>' +
-      '   <form action = "" method="POST">' +
-      '    <input type="file" name="image">' +
-      '    <input type="submit" name="Upload Image">' +
-      '   </form>' +
-      '	  <h1>Hello.</h1> Time is ' + Date.now() +
       ' </body>\n' +
       '</html>\n'
     );
