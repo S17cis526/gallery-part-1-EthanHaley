@@ -1,0 +1,19 @@
+<!doctype html>+
+<html>
+  <head>
+    <title><%= context.title %></title>
+    <link href="gallery.css" type="text/css" rel="stylesheet"/>'
+  </head>
+  <body>
+    <h1><%= context.title %></h1>
+    generateTitleForm()
+    <div class="gallery">
+    <%= context.imageTags  %>
+    </div>
+    <form action = "" method="POST">
+      <input type="file" name="image">
+      <input type="submit" name="Upload Image">
+    </form>
+	  <h1>Hello.</h1> Time is  + Date.now()</h1>
+  </body>
+</html>

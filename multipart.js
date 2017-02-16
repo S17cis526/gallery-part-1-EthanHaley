@@ -2,10 +2,10 @@
   * @module
   * A module for processing multipart HTTP requests
   */
-
-"use strict;"
-
 module.exports = multipart;
+
+const CRLF = Buffer.from([0x0D, 0x0A]);
+const DOUBLE_CRLF = Buffer.from([0x0D,0x0A,0x0D,0x0A]);
 
 /**
   * @function multipart
@@ -18,9 +18,11 @@ module.exports = multipart;
   */
   function multipart(req, res,) next {
     var chunks = [];
+
     req.on('error', function(err) {
       console.error(err);
       res.statusCode = 500;
+      res.statusMessage = "Server Error";
       res.end();
     });
 
@@ -29,11 +31,29 @@ module.exports = multipart;
     });
 
     req.on('end', function() {
-      var boundary = req.headers["ContentType"];
-      var buffer = Buffer.concat(chunks);
-      req.body = processBody(buffer, boundary);
-      next(req, res);
-    })
+      var body = Buffer.concat(chunks);
+      var match = /boundary=(.+);?/.exec(req.headers['Content-Type']);
+
+      if(match && match[1]) {
+        processBody(body, match[1], function(err, contents) {
+          if(err) {
+            console.log(err);
+            res.statusCode = 500;
+            res.statusMessage = "Server Error";
+            res.end();
+          }
+
+          req.body = contents;
+          next(req, res);
+        });
+      }
+      else {
+        console.error("No multipart boundary defined.");
+        req.statusCode = 400;
+        req.statusMessage = "Malformed multipart request";
+        res.end();
+      }
+    });
   }
 
 /**
@@ -45,50 +65,55 @@ module.exports = multipart;
   * properties filename, contentType, and data
   */
   function processBody(buffer, boundary, callback) {
-    var contents = [];
-    var start = buffer.indexOf(boundary) + boundary.length + 2;
-    var end = buffer.indexOf(boundary, start);
-
-    while(end > start) {
-      contents.push(buffer.slice(start, end));
-      start = end + boundary.length + 2;
-      end = buffer.indexOf(boundary, start);
-    }
-
-    var parsedContents = {};
-    contents.forEach(function(content){
-      parseContent(content, function(err, obj) {
-        if(err) return console.error(err);
-        parsedContent[tuple[0]] = tuple[1];
+    var formData = [];
+    splitContentParts(buffer, boundary).forEach(function(content) {
+      parseContent(content, function(err, parts) {
+        if(err) return callback(err);
+        formData[parts[0]] = parts[1];
       });
     });
+    callback(false, formData);
   }
+
+  function splitContentParts(buffer, boundary) {
+  var parts = [];
+  var start = buffer.indexOf('--' + boundary) + boundary.length + 2;
+  var end = buffer.indexOf(boundary, start);
+  while(end > start) {
+    parts.push(buffer.slice(start, end));
+    start = end + boundary.length;
+    end = buffer.indexOf(boundary, start);
+  }
+  return parts;
+}
 
 /**
   * @function parseContent
   * Parses a content section and returns
   * the key/value pair as a two-element array
   */
-  function parseContent(content, callback) {
-    var index = content.indexOf(DOUBLE_CRLF);
-    var head = content.slice(0, index).toString();
-    var body = content.slice(index + 4);
-    var name = /name="([\w\d\-_]+)"/.exec(head);
-    var filename = /filename="([\w\d\-_\.]+)"/.exec(head);
-    var contentType = /Content-Type: ([\w\d]+\/]+)/.exec(head);
+  function parseContent(buffer, callback) {
+    var index = buffer.indexOf(DOUBLE_CRLF);
+    var head = buffer.slice(0, index).toString();
+    var body = buffer.slice(index + 4, buffer.length - 4);
 
-    if(!name) return callback
+    var headers = {};
+    head.split(CRLF).forEach(function(line){
+      var parts = line.split(': ');
+      var key = parts[0].toLowerCase();
+      var value = parts[1];
+      headers[key] = value;
+    });
 
+    var name = /name="([^;"]+)"/.exec(headers['content-disposition']);
+    if(!name) return callback("No name in multipart content header");
+
+    var filename = /filename="([^;"]+)"/.exec(headers['content-disposition']);
     if(filename) {
-      //we have a file
-      return [name[1], {
-        filename: filename[1],
-        contentType: ()?,
-        data: body
-      }]
-    }
-    else {
-      //we have a value
-      return name[1]
+      var contentType = headers['content-type'];
+      if(!contentType) contentType = 'application/octet-stream';
+      callback(false, [name[1], {filename: filename[1], contentType: contentType, data: body}]);
+    } else {
+      callback(false, [name[1], body.toString()]);
     }
   }

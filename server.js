@@ -1,4 +1,3 @@
-"use strict";
 
 /**
  * server.js
@@ -10,16 +9,33 @@
 
  server.listen(port, function() {
  */
+ "use strict";
 
+ var multipart = require('./multipart');
+ var template = require('./template');
  var http = require('http');
  var url = require('url');
  var fs = require('fs');
  var port = 12037;
- var title = "Image Gallery"; //default title
- var config = JSON.parse(fs.readFileSync('config.json'));
+ var title = "Image Gallery Defaul"; //Default title
 
+ var config = JSON.parse(fs.readFileSync('config.json'));
  var stylesheet = fs.readFileSync('gallery.css');
 
+ template.loadDir('templates');
+
+ function getImageNames(callback) {
+   fs.readdir('images/', function(err, fileNames) {
+     if(err) callback(err, undefined);
+     else callback(false, fileNames);
+   });
+ }
+
+ function imageNamesToTags(fileNames) {
+   return filesnames.map(function(filename) {
+     return '<img src="${fileName}" alt="${fileName}">';
+   });
+ }
  var imageNames = ['ace.jpg', 'bubble.jpg', 'chess.jpg', 'fern.jpg', 'mobile.jpg'];
 
  function serveImage(filename, req, res) {
@@ -60,7 +76,7 @@ var server = http.createServer((req, res) => {
         serveGallery(req, res);
       }
       else if(req.method == 'POST') {
-        uploadPicture(req, res);
+        uploadImage(req, res);
       }
       break;
     case "/favicon.ico":
@@ -210,5 +226,12 @@ var server = http.createServer((req, res) => {
      var data = qs.parse(body);
      req.body = data;
      callback(req, res);
+   });
+ }
+
+ function buildGallery(imageTags) {
+   return template.render('gallery', {
+     title: config.title,
+     imageTags: imageNamesToTags(imageTags).join('')
    });
  }
