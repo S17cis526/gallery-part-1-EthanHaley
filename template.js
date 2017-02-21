@@ -1,5 +1,7 @@
 /** @module template
   */
+"use strict";
+
 module.exports = {
   render: render,
   loadDir: loadDir
@@ -15,7 +17,7 @@ var templates = {};
 function loadDir(directory) {
   var dir = fs.readdirSync(directory);
   dir.forEach(function(file) {
-    var path = directory + '/' + file + '.html';
+    var path = directory + '/' + file;
     var stats = fs.statSync(path);
     if(stats.isFile()) {
       templates[file] = fs.readFileSync(path).toString();
@@ -30,6 +32,6 @@ function loadDir(directory) {
   */
 function render(templateName, context) {
   return templates[templateName].replace(/<%=(.+)%>/g, function(match, js) {
-    return eval("var context = " + JSON.stringify(context) + ";" + js);
+    return eval('var context = ' + JSON.stringify(context) + ';' + js);
   });
 }

@@ -16,7 +16,7 @@ const DOUBLE_CRLF = Buffer.from([0x0D,0x0A,0x0D,0x0A]);
   * and send a 500 status code. Otherwise
   * we invoke next with the request and response.
   */
-  function multipart(req, res,) next {
+  function multipart(req, res, next) {
     var chunks = [];
 
     req.on('error', function(err) {
@@ -65,7 +65,7 @@ const DOUBLE_CRLF = Buffer.from([0x0D,0x0A,0x0D,0x0A]);
   * properties filename, contentType, and data
   */
   function processBody(buffer, boundary, callback) {
-    var formData = [];
+    var formData = {};
     splitContentParts(buffer, boundary).forEach(function(content) {
       parseContent(content, function(err, parts) {
         if(err) return callback(err);
